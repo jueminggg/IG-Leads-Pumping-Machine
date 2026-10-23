@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Turn Instagram's "Download your information" followers export into a lead tracker.
+
+Usage:
+    python3 scripts/parse_followers.py path/to/followers_1.json [more files...]
+
+Writes data/leads.csv. Existing rows are kept, so re-running after a new
+export only adds new followers and never wipes your notes.
+"""
+import csv
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+TRACKER = Path(__file__).resolve().parent.parent / "data" / "leads.csv"
+COLUMNS = [
+    "handle", "profile_url", "followed_since", "status", "age_signal",
+    "life_stage", "recent_activity", "message_sent", "date_sent",
+    "last_reply", "next_step", "next_followup", "notes",
+]
+
+
+def iter_entries(data):
+    """Yield (handle, url, timestamp) from any known export layout."""
+    if isinstance(data, dict):
+        # e.g. {"relationships_followers": [...]}
+        for value in data.values():
+            if isinstance(value, list):
+                yield from iter_entries(value)
+        return
+    for item in data:
+        for s in item.get("string_list_data", []):
+            handle = s.get("value") or item.get("title")
+            url = s.get("href", "")
+            if not handle and url:
+                handle = url.rstrip("/").split("/")[-1]
+            if handle:
+                yield handle, url or f"https://www.instagram.com/{handle}", s.get("timestamp")
+
+
+def main(paths):
+    rows = {}
+    if TRACKER.exists():
+        with TRACKER.open(newline="", encoding="utf-8") as f:
+            rows = {r["handle"]: r for r in csv.DictReader(f)}
+    before = len(rows)
+
+    for p in paths:
+        data = json.loads(Path(p).read_text(encoding="utf-8"))
+        for handle, url, ts in iter_entries(data):
+            if handle in rows:
+                continue
+            since = datetime.fromtimestamp(ts, timezone.utc).date().isoformat() if ts else ""
+            rows[handle] = {c: "" for c in COLUMNS} | {
+                "handle": handle, "profile_url": url,
+                "followed_since": since, "status": "new",
+            }
+
+    TRACKER.parent.mkdir(exist_ok=True)
+    with TRACKER.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows.values())
+    print(f"{len(rows) - before} new followers added, {len(rows)} total -> {TRACKER}")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    main(sys.argv[1:])

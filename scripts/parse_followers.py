@@ -7,18 +7,12 @@ Usage:
 Writes data/leads.csv. Existing rows are kept, so re-running after a new
 export only adds new followers and never wipes your notes.
 """
-import csv
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRACKER = Path(__file__).resolve().parent.parent / "data" / "leads.csv"
-COLUMNS = [
-    "handle", "profile_url", "followed_since", "status", "age_signal",
-    "life_stage", "recent_activity", "message_sent", "date_sent",
-    "last_reply", "next_step", "next_followup", "notes",
-]
+from tracker import COLUMNS, TRACKER, load, save
 
 
 def iter_entries(data):
@@ -40,10 +34,7 @@ def iter_entries(data):
 
 
 def main(paths):
-    rows = {}
-    if TRACKER.exists():
-        with TRACKER.open(newline="", encoding="utf-8") as f:
-            rows = {r["handle"]: r for r in csv.DictReader(f)}
+    rows = load()
     before = len(rows)
 
     for p in paths:
@@ -57,11 +48,7 @@ def main(paths):
                 "followed_since": since, "status": "new",
             }
 
-    TRACKER.parent.mkdir(exist_ok=True)
-    with TRACKER.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(rows.values())
+    save(rows)
     print(f"{len(rows) - before} new followers added, {len(rows)} total -> {TRACKER}")
 
 

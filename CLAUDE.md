@@ -8,7 +8,23 @@ first message, and tracks every conversation to the next step.
 - Young: students (poly / uni / NS) or fresh grads in their first 1–3 years of work.
 - Roughly under 30.
 - Skip: married, has kids, clearly 30+, already in finance/insurance (competitors),
-  businesses, meme/fan pages, private accounts with nothing visible.
+  businesses, meme/fan pages, and private accounts with nothing visible AND no
+  `how_i_know` note. `how_i_know` = "skip" means never contact.
+
+## Research order and private accounts
+Columns: `mutual` (owner follows them back, from the export), `account`
+(public/private, fill in when visiting), `how_i_know` (owner's note).
+1. Mutuals first (Claude sees everything), newest followers first.
+2. Then public non-mutuals.
+3. Then private non-mutuals that have a `how_i_know` note. Build the message
+   from bio, mutual friends ("Followed by…") and the note, never pretend to
+   have seen posts you can't see. Notes like "don't know" go last.
+4. Private non-mutuals that look on-target (bio says school/first job) but
+   have no note: add them to a "Follow back" list in `reports/_today.md`
+   (max 20/day) for the owner to follow back by hand. Re-check them after
+   they accept.
+If `how_i_know` is empty for many leads, run `python3 scripts/how_i_know.py
+list` and send the owner the batch to fill in.
 - Age and marital status are guesses from public signals (grad posts, uni in bio,
   "first day at work", wedding photos). Record the signal, not just the verdict.
 
@@ -100,8 +116,9 @@ If no angle fits honestly, move them to `nurture` instead of forcing a pitch.
   Don't make product, return, or "guaranteed" claims in DMs.
 
 ## Files
-- `scripts/parse_followers.py`: Instagram data export → `data/leads.csv`.
+- `scripts/parse_followers.py`: followers (+ following) export → `data/leads.csv`, marks mutuals.
 - `scripts/due.py`: who needs a message today → `reports/_today.md`.
 - `scripts/tracker.py`: shared tracker columns.
+- `scripts/how_i_know.py`: owner tags followers with how they know them.
 - `data/leads.csv`: the tracker (one row per follower).
 - `reports/<handle>.md`: the 4-part report per prospect.

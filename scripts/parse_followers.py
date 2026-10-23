@@ -2,7 +2,11 @@
 """Turn Instagram's "Download your information" followers export into a lead tracker.
 
 Usage:
-    python3 scripts/parse_followers.py path/to/followers_1.json [more files...]
+    python3 scripts/parse_followers.py followers_1.json [following.json ...]
+
+Pass the followers file(s) and, optionally, your following file. Files whose
+name contains "following" (or whose data is "relationships_following") are
+used to mark each follower as mutual = yes/no (you follow them back).
 
 Writes data/leads.csv. Existing rows are kept, so re-running after a new
 export only adds new followers and never wipes your notes.
@@ -37,8 +41,13 @@ def main(paths):
     rows = load()
     before = len(rows)
 
+    following = set()
     for p in paths:
         data = json.loads(Path(p).read_text(encoding="utf-8"))
+        if "following" in Path(p).name.lower() or (
+                isinstance(data, dict) and "relationships_following" in data):
+            following |= {h for h, _, _ in iter_entries(data)}
+            continue
         for handle, url, ts in iter_entries(data):
             if handle in rows:
                 continue
@@ -48,8 +57,15 @@ def main(paths):
                 "followed_since": since, "status": "new",
             }
 
+    if following:
+        for handle, r in rows.items():
+            r["mutual"] = "yes" if handle in following else "no"
+
     save(rows)
     print(f"{len(rows) - before} new followers added, {len(rows)} total -> {TRACKER}")
+    if following:
+        n = sum(r["mutual"] == "yes" for r in rows.values())
+        print(f"{n} mutual (you follow them back), {len(rows) - n} not")
 
 
 if __name__ == "__main__":

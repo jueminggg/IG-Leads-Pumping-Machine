@@ -68,10 +68,13 @@ If no angle fits honestly, move them to `nurture` instead of forcing a pitch.
 ## Daily routine (run every day, or when the owner says "check replies")
 1. **Read the inbox** at instagram.com/direct/inbox in the owner's Chrome.
    Open only threads with handles in `data/leads.csv` whose status is
-   `messaged`, `replied`, `rapport`, `value_offered`, `meeting_booked` or
+   `researched`, `messaged`, `replied`, `rapport`, `value_offered`, `meeting_booked` or
    `nurture`. Don't open or summarise anyone else's chats. Read only, never type.
    Also check "Requests" for tracked handles.
 2. **Update each row**: `last_reply`, `last_reply_date`, new `status`.
+   If the owner has sent the drafted (or an edited) message to a `researched`
+   lead, set `messaged`, copy what was actually sent into `message_sent`,
+   set `date_sent`, and `next_followup` = date_sent + 6 days.
    If they said not interested → `nurture` (or `not_fit` if rude/clear no).
 3. **Draft the next message** into `reports/<handle>.md` under a dated
    "Follow-up" heading, with the same 4 parts: what changed, the message,
